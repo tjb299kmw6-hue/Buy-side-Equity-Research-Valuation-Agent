@@ -1,4 +1,4 @@
-# Equity Memo Agent
+# Equity Research Valuation Agent
 
 **Try it here: https://buyside-equity-memo-app.streamlit.app** (free, nothing to install, no sign-up)
 
