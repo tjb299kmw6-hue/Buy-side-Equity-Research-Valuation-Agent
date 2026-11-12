@@ -1,38 +1,61 @@
 # Equity Memo Agent
 
-Type a company name or ticker and get a structured, buy-side style valuation memo as a formatted Excel workbook. It works for any listed company on Yahoo Finance, including non-US listings (`SHEL.L`, `SAP.DE`, `7203.T`).
+**Try it here: https://buyside-equity-memo-app.streamlit.app** (free, nothing to install, no sign-up)
 
-- **Python does all the maths**: share price, market cap, EV, P/E, EV/EBITDA, FCF yield, WACC, 5-year DCF, LBO returns and peer multiples.
-- **Real headlines, no AI needed**: recent Yahoo Finance headlines with snippets and links, filtered for relevance.
-- **Optional AI commentary (off by default)**: tick it in the sidebar and Google Gemini adds a thesis, opportunities, threats, risk register and news summaries. It is only given Python-computed metrics and the top headlines, and it never does arithmetic.
-- **Free to run**: Yahoo Finance data needs no key; the optional Gemini commentary has a free tier.
+I built this to speed up the first pass on a stock. You type in a company name or ticker, and it pulls the market data, runs a standard set of valuation models and gives you a formatted Excel memo you can download and work from.
 
-> For information and education only. Not investment advice. Yahoo Finance data can be delayed or wrong; check company filings before relying on any number.
+It works for any company listed on Yahoo Finance, including non-US listings like `SHEL.L`, `SAP.DE` or `7203.T`.
 
-## What you get
+All the numbers (market cap, EV, P/E, EV/EBITDA, FCF yield, WACC, a 5-year DCF, an LBO returns test and peer multiples) are calculated in Python. Recent news headlines come straight from Yahoo Finance. There's an optional Gemini add-on that writes a short thesis and risk section, but it's off by default and it never touches the numbers.
 
-An `.xlsx` memo with eight tabs:
+> This is for learning and research only, not investment advice. Yahoo data can be delayed or wrong, so check anything important against the company's filings.
 
-| Tab | Contents |
+## What's in the memo
+
+The Excel file has eight tabs:
+
+| Tab | What it shows |
 |---|---|
-| Memo | One-page summary: key metrics, valuation summary, stance, thesis, variant perception, opportunities and threats, recent news, model notes |
-| Valuation | Market snapshot, EV bridge, WACC build, valuation range chart |
-| DCF | 5-year unlevered free cash flow, valuation bridge, exit-multiple cross-check, WACC x terminal growth sensitivity |
-| LBO | Sources and uses, debt schedule with cash sweep, sponsor IRR and MOIC, maximum price for the target IRR, two IRR sensitivities |
-| Peers | Trading multiples for the company and its peers, peer statistics, peer-implied value per share |
-| Projections | Historical financials, LTM, 5-year projections, drivers, chart |
-| News & Risks | Headlines with summaries and links, opportunities, threats, risk register, what to monitor |
-| Assumptions | Every input with its source, the methodology, and data notes |
+| Memo | One-page summary: key metrics, valuation range, recent news and model notes |
+| Valuation | Market snapshot, EV bridge, WACC build and a football-field chart |
+| DCF | 5-year unlevered free cash flow, terminal value, exit-multiple cross-check and a WACC vs growth sensitivity |
+| LBO | Sources and uses, debt paydown, sponsor IRR and MOIC, the max price that still hits the target IRR, and two sensitivity tables |
+| Peers | Trading multiples for comparable companies and the value they imply |
+| Projections | Historical financials, LTM and the 5-year forecast |
+| News & Risks | Headlines with links (plus AI commentary if you turn it on) |
+| Assumptions | Every input, where it came from, and how each model works |
 
-Default LBO case: 4.5x senior debt / EBITDA at 7.0% interest, 5-year exit at the base (current) EV/EBITDA multiple, 20% minimum target IRR. All adjustable in the sidebar.
+The LBO defaults to 4.5x senior debt / EBITDA at 7% interest, a 5-year hold, exit at today's EV/EBITDA multiple and a 20% target IRR. You can change all of these, and the DCF assumptions, from the sidebar.
 
-## Use it online
+## How to use it
 
-No install needed: open the live app (link to be added once deployed on Streamlit Community Cloud), type a company name or ticker, and download the Excel memo. For optional AI commentary, open *Optional: AI commentary* in the sidebar, tick the box and paste your own free Gemini key.
+Open the link above, type a company, hit **Run analysis**, then **Download Excel memo**. Hit **Reset** to do another one. If you want to see what the output looks like first, **Try the synthetic demo** runs on a made-up company.
 
-## Run it on your own computer
+If you'd like the AI commentary, open *Optional: AI commentary* in the sidebar, tick the box and paste in your own free Gemini key from <https://aistudio.google.com/apikey>.
 
-Requires Python 3.10 or newer (3.12 or 3.13 recommended).
+## How the numbers are worked out
+
+- **Enterprise value**: market cap + debt − cash + minority interest + preferred equity.
+- **WACC**: cost of equity from CAPM (US 10-year yield, 5% equity risk premium, Blume-adjusted beta). For non-US companies the beta comes from a 5-year regression against the local index, because Yahoo's own beta for these is often unreliable. Cost of debt is interest expense / total debt, kept within 1% to 8% above the risk-free rate.
+- **Projections**: revenue starts at analyst consensus growth (or the historical growth rate if there's no consensus) and fades towards terminal growth. EBITDA margin is held at today's level, and D&A, capex and working capital follow their recent share of revenue.
+- **DCF**: unlevered free cash flow discounted at WACC, Gordon-growth terminal value (2.5% by default), mid-year discounting, and an exit-multiple version as a sense check.
+- **LBO**: buy at today's EV, all spare cash goes to paying down debt, exit at the starting multiple. The "max price" is the highest price a sponsor could pay and still hit the target IRR.
+- **Peers**: either the tickers you type in, or picked automatically from companies of a similar size (0.1x to 10x market cap) in the same industry, topped up from the same sector if needed. Typing your own peers will usually give a tighter comparison.
+
+## Limitations
+
+I'd rather be upfront about these:
+
+- Banks and insurers don't report EBITDA, so the DCF and LBO don't apply to them and are marked as such.
+- The risk-free rate is the US 10-year for every company. For a non-US company you should put the local government bond yield in the sidebar.
+- Commodity producers (oil, mining) often come out looking very cheap on a DCF, because today's cash flows get projected forward without the commodity cycle. The memo flags this.
+- The equity bridge doesn't adjust for pension deficits or long-term investments, which matters for a handful of companies.
+- Yahoo Finance is an unofficial source and can occasionally throttle requests. If you get an error, wait a minute and try again.
+- It uses the same assumptions for every company. It's a starting point for analysis, not a replacement for a proper company-specific model.
+
+## Running it yourself
+
+You need Python 3.10 or newer.
 
 ```bash
 git clone https://github.com/tjb299kmw6-hue/Buy-side-Equity-Research-Valuation-Agent.git
@@ -41,78 +64,20 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-No Git? On the GitHub page click **Code > Download ZIP**, unzip it, open a terminal in that folder, and run the last two commands. On Windows, use `py -m pip ...` and `py -m streamlit run app.py` if `pip` is not recognised.
+No Git? Click **Code > Download ZIP** on this page, unzip it, open a terminal in the folder and run the last two lines. On Windows, use `py -m pip install -r requirements.txt` and `py -m streamlit run app.py`.
 
-Click **Try the synthetic demo** to see the full output with no keys and no network calls (the demo company is invented).
+For the optional Gemini commentary when running locally, copy `.streamlit/secrets.toml.example` to `.streamlit/secrets.toml` and add your key (that file is ignored by Git, so it won't be uploaded). The free tier is limited to roughly 20 requests a day per model, and each company uses two. If one model runs out, the app falls back to `gemini-3.8-flash` and then `gemini-3.6-flash`. If all three are busy, you still get the full numbers.
 
-### Add your free Gemini key
-
-1. Create a key at <https://aistudio.google.com/apikey>.
-2. Give it to the app in any one of three ways (checked in this order):
-   - tick **Add AI-written thesis...** under *Optional: AI commentary* and paste it into **Gemini API key** (your session only), or
-   - copy `.streamlit/secrets.toml.example` to `.streamlit/secrets.toml` and set `GEMINI_API_KEY`, or
-   - set an environment variable: `export GEMINI_API_KEY=...`
-
-AI commentary is off by default. Without it the app still produces the full quantitative workbook with real Yahoo headlines; only the thesis, opportunities and threats sections are left out, and peers are chosen by size (below).
-
-## Deploy free on Streamlit Community Cloud
-
-1. Push this folder to a public GitHub repository. `.streamlit/secrets.toml` is git-ignored, so your key is not committed.
-2. Go to <https://share.streamlit.io>, choose **Create app**, pick the repository and set the main file to `app.py`.
-3. Open **Advanced settings > Secrets** and paste:
-   ```toml
-   GEMINI_API_KEY = "your-key"
-   ```
-4. Deploy and share the link.
-
-### Free-tier quota: read this before sharing a link
-
-Gemini's free tier is small. At the time of writing the Flash models were reported at about 5 requests per minute and 20 requests per day per key (check the rate-limit page in AI Studio for your own limits). Each new company uses two requests, so a single shared key covers roughly ten companies a day. The app is built around that:
-
-- Responses are cached for an hour (`@st.cache_data(ttl=3600)`), so repeat runs of the same company cost nothing.
-- Entering peers manually skips one of the two requests.
-- On a `429` the app shows a retry message and still delivers the quantitative workbook.
-- Every visitor can paste their own free key in the sidebar, which is the practical way to share this widely.
-- **Automatic fallback:** if a model's quota runs out (HTTP 429) the app tries the next one, in this order: `gemini-3.5-flash-lite` (primary), `gemini-3.8-flash`, then `gemini-3.6-flash`. Quotas are counted per model, so each fallback has its own allowance. The Assumptions tab and the memo footer record which model actually wrote the text. Only quota errors (and an unavailable model) trigger a fallback; a bad API key stops straight away.
-- To change the primary model, set `GEMINI_MODEL` in secrets or the environment. The two fallbacks stay in place.
-
-## How it works
+## Code layout
 
 ```
-app.py            Streamlit UI, caching, orchestration
-market_data.py    Yahoo Finance via yfinance: prices, statements, news, FX, peers
-engine.py         Pure Python maths: market metrics, WACC, projections, DCF, LBO, peers
-gemini_layer.py   google-genai SDK, Pydantic schemas, key handling, 429 handling
-excel_memo.py     openpyxl workbook writer
-demo_data.py      Synthetic company for the offline demo
-tests/            Offline tests (no network, no key)
+app.py            the Streamlit app
+market_data.py    pulls prices, financials, news and FX from Yahoo Finance
+engine.py         all the valuation maths (WACC, DCF, LBO, peers)
+excel_memo.py     builds the Excel workbook
+gemini_layer.py   the optional Gemini commentary
+demo_data.py      the made-up company for the demo
+tests/            offline tests
 ```
 
-Gemini calls use the official `google-genai` SDK with `GenerateContentConfig(response_mime_type="application/json", response_schema=<Pydantic model>)`, so the reply is validated JSON that maps straight into Excel cells.
-
-### Method in brief
-
-- **Enterprise value** = market cap + total debt - cash and short-term investments + minority interest + preferred.
-- **WACC**: CAPM cost of equity (live US 10-year yield, 5.0% equity risk premium, Blume-adjusted beta: Yahoo beta for US listings, a 5-year regression against the local index for non-US listings, where Yahoo's own beta is unreliable); cost of debt from interest expense / total debt, bounded to risk-free +1% to +8%; market-value equity and book debt weights.
-- **Projections**: revenue grows from LTM at the consensus rate (or the historical CAGR if there is no consensus), fading in a straight line toward terminal growth. EBITDA margin held at LTM; D&A and capex at their 3-year average share of revenue; working capital at its current share of revenue.
-- **DCF**: unlevered FCF discounted at WACC with a Gordon-growth terminal value (2.5% default) and mid-year convention; cross-checked with an exit-multiple terminal value.
-- **LBO**: purchase at the current EV, senior debt as specified, cash interest on opening balances, 100% cash sweep, no fees, exit at the base multiple. The "max price" is the highest entry price that still earns the target IRR.
-- **Peers**: typed in, or chosen automatically with no AI: companies of similar market cap (0.1x to 10x) from the company's Yahoo industry, topped up with large caps from the same sector (Gemini suggests them instead if AI commentary is on). All are validated against Yahoo and the multiples are computed in Python. For a tighter comparison, enter your own peers.
-
-### Known limits
-
-- Banks and insurers do not report EBITDA, so the DCF and LBO are marked not applicable for them.
-- The risk-free rate is the US 10-year yield for every company. For non-US companies, enter the local government bond yield in the sidebar.
-- Yahoo Finance is an unofficial data source and can throttle shared cloud servers. If that happens, wait a minute and retry.
-- For companies that report in a different currency from their listing (ADRs, some LSE names), market cap is converted at spot FX.
-- The equity bridge deducts net debt, minority interest and preferred only. Long-term investments, pension deficits and other non-operating items are not adjusted, which matters for a few cash-rich or pension-heavy companies.
-- This is a systematic first-pass screen with uniform assumptions. It is a starting point for analysis, not a substitute for a company-specific model.
-
-## Tests
-
-```bash
-pip install pytest
-python -m pytest -q
-```
-
-The tests check the financial maths against hand calculations, the Yahoo parsing against a fake `yfinance`, the Gemini layer against a fake client (including the 429 path), and the whole app end to end.
+To run the tests: `pip install pytest`, then `python -m pytest -q`. They check the maths against hand calculations and run the whole app end to end without needing internet or an API key.
