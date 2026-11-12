@@ -44,8 +44,6 @@ If you'd like the AI commentary, open *Optional: AI commentary* in the sidebar, 
 
 ## Limitations
 
-I'd rather be upfront about these:
-
 - Banks and insurers don't report EBITDA, so the DCF and LBO don't apply to them and are marked as such.
 - The risk-free rate is the US 10-year for every company. For a non-US company you should put the local government bond yield in the sidebar.
 - Commodity producers (oil, mining) often come out looking very cheap on a DCF, because today's cash flows get projected forward without the commodity cycle. The memo flags this.
